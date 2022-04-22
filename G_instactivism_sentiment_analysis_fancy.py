@@ -58,7 +58,7 @@ def getVecLength(vecIn: list):
     """
     total = 0
     for num in vecIn:
-        total += num**2
+        total += float(num)**2 # Here
     return total**(1/2)
 
 def normalizeVec(vecIn:list):
@@ -68,7 +68,10 @@ def normalizeVec(vecIn:list):
     """
     normVec = []
     for num in vecIn:
-        normVec.append(num/getVecLength(vecIn))
+        if getVecLength(vecIn) > 0:
+            normVec.append(float(num)/getVecLength(vecIn)) #HERE ZeroDivisionError: float division by zero
+        else:
+            normVec.append(0)
     return normVec
 
 def dotProductVec(vecInA:list, vecInB:list):
@@ -88,7 +91,7 @@ def cosine(vecInA: list, vecInB: list):
         :param vecInA, vecInB: two lists representing vectors, one element per dimension.
         :return: the cosine.
         """
-        cosAB = dotProductVec(normalizeVec(vecInA), normalizeVec(vecInB))
+        cosAB = dotProductVec(normalizeVec(vecInA), normalizeVec(vecInB)) # here
         return cosAB
 
 def loadGloveVectors(fname):
@@ -121,13 +124,13 @@ def computeCentroidVector(tokensIn:list, vecDict:dict):
         if tok in vecDict.keys():
             vectors[tok] = vecDict[tok]
     values = list(vectors.values()) # get list of glove vectos 
-    n = 25 # number of values in each vector
+    n = len(vecDict["hi"]) # number of values in each vector
     nv = len(values) # number of vectors 
     meanVec = [0]*n
     for i in range(n):
-        sumVec = 0 #moved up
-        for v in range(nv): # HERE
-            sumVec += float(values[v][i]) # HERE
+        sumVec = 0 
+        for v in range(nv): 
+            sumVec += float(values[v][i]) 
             sumVec = sumVec/nv
             meanVec[i] = sumVec
     return meanVec
@@ -135,7 +138,7 @@ def computeCentroidVector(tokensIn:list, vecDict:dict):
 def selectGloVecs(gloveVectors: dict):
     words = ["positive", "good", "approve", "like", 
             "neutral", "okay", "alright", "middle",
-             "negative", "bad", "disapprove", "dislike"]
+            "negative", "bad", "disapprove", "dislike"]
     myGloVes = {}
     for w in words:
         if w in gloveVectors.keys():
@@ -151,7 +154,7 @@ def main():
     testDf = pd.read_csv("data/test_instactivism_20.csv")
 
     # get texts & labels
-    trainTexts = trainDf["description"] #changed
+    trainTexts = trainDf["description"] 
     print("Texts: "+str(type(trainTexts[0])))
     trainLabs = trainDf["sentiment"]
     print("Labels: "+str(type(trainLabs)))
@@ -164,17 +167,23 @@ def main():
     myGloVes = selectGloVecs(gloVecs)
 
     # get centroid vectors of tokenized descriptions
-    tokTexts = []
+    #tokTexts = []
     centroids = []
     for txt in trainTexts:
-        toks = tokenizeDoc(txt) #changed
-        centroid = computeCentroidVector(toks, gloVecs) # 
+        toks = tokenizeDoc(txt) 
+        centroid = computeCentroidVector(toks, gloVecs) 
         centroids.append(centroid)
-        tokTexts.append(toks)
+        #tokTexts.append(toks)
+        cosSim = {}
+        for w in myGloVes.keys(): 
+            cs = cosine(centroid, myGloVes[w]) # doesn't like this line
+            cosSim[w] = cs
+    print(cosSim)
+        
 
         # get cosine similarity to some +/- gloVecs
 
     print(len(centroids))
-
+    print(centroids[0])
 if __name__== "__main__" :
     main()
