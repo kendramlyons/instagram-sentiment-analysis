@@ -129,7 +129,5 @@ dmypy.json
 .pyre/
 
 # buggy baseline script
-.instactivism_sentiment_analysis_05_B.py
-.glove.twitter.27B.25d.txt
-.glove.twitter.27B.50d.txt
-.glove.twitter.27B.100d.txt
+*.txt
+
