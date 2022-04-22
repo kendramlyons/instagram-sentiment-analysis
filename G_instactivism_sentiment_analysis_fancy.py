@@ -15,7 +15,7 @@ performance report with accuracy, F1, precision and recall scores by class and o
 pre-trained GloVe embeddings from: https://nlp.stanford.edu/projects/glove/
 '''
 # load packages
-#import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 import pandas as pd, numpy as np
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.linear_model import LogisticRegression
@@ -68,7 +68,7 @@ def normalizeVec(vecIn:list):
     """
     normVec = []
     for num in vecIn:
-        if getVecLength(vecIn) > 0:
+        if getVecLength(vecIn) > 0: # add if-else to deal with vectors of length 0
             normVec.append(float(num)/getVecLength(vecIn)) #HERE ZeroDivisionError: float division by zero
         else:
             normVec.append(0)
@@ -136,15 +136,22 @@ def computeCentroidVector(tokensIn:list, vecDict:dict):
     return meanVec
 
 def selectGloVecs(gloveVectors: dict):
-    words = ["positive", "good", "approve", "like", 
-            "neutral", "okay", "alright", "middle",
-            "negative", "bad", "disapprove", "dislike"]
+    words = ["yes", "positive", "good", "agree", "like", 
+            "maybe", "neutral", "okay", "alright", "middle",
+            "no", "negative", "bad", "disagree", "dislike"]
     myGloVes = {}
     for w in words:
         if w in gloveVectors.keys():
             myGloVes[w] = gloveVectors[w]
     return myGloVes
 
+def getSentimentScores(csDict, keys):
+    score = 0
+    for k in keys:
+        score += csDict[k] # divide by number of keys?
+    return score
+
+#def assignLabels():
 
 def main():
 
@@ -165,25 +172,49 @@ def main():
 
     # select a few positive,  neutral and negative word embeddings to compare to centroids ?
     myGloVes = selectGloVecs(gloVecs)
+    posKeys = ["yes", "positive", "good", "agree", "like"]
+    neuKeys = ["maybe", "neutral", "okay", "alright", "middle"]
+    negKeys = ["no", "negative", "bad", "disagree", "dislike"]
 
     # get centroid vectors of tokenized descriptions
-    #tokTexts = []
-    centroids = []
+    predLabs = []
     for txt in trainTexts:
         toks = tokenizeDoc(txt) 
         centroid = computeCentroidVector(toks, gloVecs) 
-        centroids.append(centroid)
-        #tokTexts.append(toks)
         cosSim = {}
+        # get cosine similarity to some +/- gloVecs
         for w in myGloVes.keys(): 
             cs = cosine(centroid, myGloVes[w]) # doesn't like this line
             cosSim[w] = cs
-    print(cosSim)
+        scoreDict = {}
+        scoreDict["positive"] = getSentimentScores(cosSim, posKeys)
+        scoreDict["neutral"] = getSentimentScores(cosSim, neuKeys)
+        scoreDict["negative"] = getSentimentScores(cosSim, negKeys)
+        predLabs.append(max(scoreDict, key = scoreDict.get) )
         
+    print(cosSim)
+    print(scoreDict)
+    print(len(predLabs))
+    predLabs = predLabs
 
-        # get cosine similarity to some +/- gloVecs
+    cm = confusion_matrix(trainLabs, predLabs, labels=["negative", "neutral", "positive"])
+    cmd = ConfusionMatrixDisplay(cm, display_labels=["negative", "neutral", "positive"])
+    cmd.plot()
+    plt.show()
 
-    print(len(centroids))
-    print(centroids[0])
+    # get accuracy, f1, precision and recall
+    accuracy = accuracy_score(trainLabs, predLabs) 
+    print("Accuracy: " + str(accuracy))
+    f1 = f1_score(trainLabs, predLabs, average = "macro") 
+    print("F1: " + str(f1))
+    precision = precision_score(trainLabs, predLabs, average = "macro") 
+    print("Precision: " + str(precision))
+    recall = recall_score(trainLabs, predLabs, average = "macro")
+    print("Recall: " + str(recall))
+    report = classification_report(trainLabs, predLabs)
+    print(report)
+
+    #print(len(centroids))
+    #print(centroids[0])
 if __name__== "__main__" :
     main()
