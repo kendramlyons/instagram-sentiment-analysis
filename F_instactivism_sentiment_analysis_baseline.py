@@ -50,7 +50,7 @@ def main():
     cleanTexts = cleanAllTexts(trainTexts)
     model = cv.fit(cleanTexts)
     vecArray = cv.transform(cleanTexts).toarray()
-    features = cv.vocabulary_
+    #features = cv.vocabulary_
 
     # get labels
     trainLabels = trainDf["sentiment"]
@@ -89,3 +89,5 @@ def main():
     report = classification_report(testLabels, testPreds)
     print(report)
 
+if __name__== "__main__" :
+    main()

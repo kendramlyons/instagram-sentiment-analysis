@@ -17,7 +17,7 @@ pre-trained GloVe embeddings from: https://nlp.stanford.edu/projects/glove/
 # load packages
 import matplotlib.pyplot as plt
 import pandas as pd, numpy as np
-#from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import ConfusionMatrixDisplay, confusion_matrix, accuracy_score, f1_score, precision_score, recall_score, classification_report
 from sklearn import preprocessing
@@ -154,95 +154,73 @@ def selectGloVecs(gloveVectors: dict):
             myGloVes[w] = gloveVectors[w]
     return myGloVes
 
-def getCSDicts(texts:list, gloves:dict, selected:dict):
-    csDicts = []
-    for txt in texts:
-        toks = tokenizeDoc(txt) 
-        centroid = computeCentroidVector(toks, gloves)
-        cosSim = {}
-        # get cosine similarity to some +/- gloVecs
-        for w in selected.keys(): 
-            cs = cosine(centroid, selected[w]) # doesn't like this line
-            cosSim[w] = cs
-        csDicts.append(cosSim)
-    return csDicts
-
-def scoresToArray(csDictList:list): #selected:dict, 
-    """     # for each text, add each cosine similarity value from csDicts to vecArray 
-    allScores = []                  
-    for k in selected.keys(): # NEED TO REVERSE LOOPS so list has one tuple for each doc instead of a list for each key
-        scores = []     
-        for d in csDictList:
-            scores.append(d[k]) # HERE TypeError: only integer scalar arrays can be converted to a scalar index when converting d[k] to list
-        allScores.append(scores)
-    #newArray = [] """
-    allScores = []
-    for d in csDictList:
-        allScores.append(list(d.values()))
-    return allScores 
-
 def getSentimentScores(csDict, keys):
     score = 0
     for k in keys:
         score += csDict[k] # divide by number of keys?
     return score
 
+#def assignLabels():
+
 def main():
+    # read in train, validation or test set
+    #trainDf "data/train_instactivism_60.csv" X
+    #validateDf "data/validate_instactivism_20.csv"
+    #testDf "data/test_instactivism_20.csv"
+    dataSubset = "data/validate_instactivism_20.csv" #choose train, validate or test
+    # get texts & labels
+    texts, trueLabs = getData(dataSubset)
+
     # get pre-trained GloVe embeddings
-    fname = "data/glove.twitter.27B.100d.txt" #"data/glove.twitter.27B.50d.txt" # #"data/glove.twitter.27B.25d.txt"
+    #fname = "data/glove.twitter.27B.25d.txt"
+    fname = "data/glove.twitter.27B.50d.txt"
     gloVecs = loadGloveVectors(fname) # takes a bit to load
 
     # select a few positive,  neutral and negative word embeddings to compare to centroids ?
     myGloVes = selectGloVecs(gloVecs)
+    posKeys = ["yes", "positive", "good", "agree", "like"]
+    neuKeys = ["maybe", "neutral", "okay", "alright", "middle"]
+    negKeys = ["no", "negative", "bad", "disagree", "dislike"]
 
-    # get raining texts & labels
-    trainTexts, trainLabs = getData("data/train_instactivism_60.csv")
+    # get centroid vectors of tokenized descriptions
+    predLabs = []
+    for txt in texts:
+        toks = tokenizeDoc(txt) 
+        centroid = computeCentroidVector(toks, gloVecs) 
+        cosSim = {}
+        # get cosine similarity to some +/- gloVecs
+        for w in myGloVes.keys(): 
+            cs = cosine(centroid, myGloVes[w]) # doesn't like this line
+            cosSim[w] = cs
+        scoreDict = {}
+        scoreDict["positive"] = getSentimentScores(cosSim, posKeys)
+        scoreDict["neutral"] = getSentimentScores(cosSim, neuKeys)
+        scoreDict["negative"] = getSentimentScores(cosSim, negKeys)
+        predLabs.append(max(scoreDict, key = scoreDict.get) )
+        
+    print(cosSim)
+    print(scoreDict)
+    print(len(predLabs))
+    predLabs = predLabs
 
-    # get dictionary of centroid vectors of tokenized descriptions for each text
-    csDicts = getCSDicts(trainTexts, gloVecs, myGloVes) # list of dicts TRAINING
-    print(len(csDicts))
-    print(csDicts[0])
-    # for each text, add each cosine similarity value from csDicts to vecArray 
-    scoreArray = np.array(scoresToArray(csDicts)) # TRAINING
-    print(len(scoreArray)) 
-    print(len(scoreArray[1])) 
-
-    # encode labels
-    le = preprocessing.LabelEncoder()
-    encodedLabs = le.fit_transform(trainLabs)
-
-    # train model
-    lrc = LogisticRegression(class_weight = "balanced") # make sure this is always training on train set
-    lrModel = lrc.fit(scoreArray, encodedLabs)
-
-    # read in validation or test set and get texts and labels for evaluation  
-    #validateDf "data/validate_instactivism_20.csv"
-    #testDf "data/test_instactivism_20.csv"
-    evalData = "data/validate_instactivism_20.csv" # change texts
-    evalTexts, evalLabs = getData(evalData) # EVAL
-
-    csDictsEval = getCSDicts(evalTexts, gloVecs, myGloVes) #EVAL
-    scoreArrayEval = np.array(scoresToArray(csDictsEval))
-
-    numLabs = lrModel.predict(scoreArrayEval) # TRAIN
-    predLabs = le.inverse_transform(numLabs)
-
-    cm = confusion_matrix(evalLabs, predLabs, labels=["negative", "neutral", "positive"]) #, normalize="true"
+    cm = confusion_matrix(trueLabs, predLabs, labels=["negative", "neutral", "positive"])
     cmd = ConfusionMatrixDisplay(cm, display_labels=["negative", "neutral", "positive"])
     cmd.plot()
     plt.show()
 
     # get accuracy, f1, precision and recall
-    accuracy = accuracy_score(evalLabs, predLabs) # TRAIN
+    accuracy = accuracy_score(trueLabs, predLabs) 
     print("Accuracy: " + str(accuracy))
-    f1 = f1_score(evalLabs, predLabs, average = "macro") 
+    f1 = f1_score(trueLabs, predLabs, average = "macro") 
     print("F1: " + str(f1))
-    precision = precision_score(evalLabs, predLabs, average = "macro") 
+    precision = precision_score(trueLabs, predLabs, average = "macro") 
     print("Precision: " + str(precision))
-    recall = recall_score(evalLabs, predLabs, average = "macro")
+    recall = recall_score(trueLabs, predLabs, average = "macro")
     print("Recall: " + str(recall))
-    report = classification_report(evalLabs, predLabs)
+    report = classification_report(trueLabs, predLabs)
     print(report)
 
+    #print(len(centroids))
+    #print(centroids[0])
 if __name__== "__main__" :
     main()

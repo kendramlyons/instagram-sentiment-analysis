@@ -4,10 +4,10 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 
 """ 
-
+Split instagram post data into train, validate and test sets 
 """
 
-text_df = pd.read_csv("data/insta_activism_sentiment_text_21_22.csv", encoding='utf-8', header = 0)
+text_df = pd.read_csv("data/insta_activism_sentiment_text_21_22_reduced.csv", encoding='utf-8', header = 0)
 
 train_data, test_data = train_test_split(text_df, train_size=0.60, random_state=4, stratify=text_df['sentiment'])
 

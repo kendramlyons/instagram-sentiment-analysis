@@ -17,7 +17,7 @@ pre-trained GloVe embeddings from: https://nlp.stanford.edu/projects/glove/
 # load packages
 import matplotlib.pyplot as plt
 import pandas as pd, numpy as np
-#from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import ConfusionMatrixDisplay, confusion_matrix, accuracy_score, f1_score, precision_score, recall_score, classification_report
 from sklearn import preprocessing
@@ -167,19 +167,19 @@ def getCSDicts(texts:list, gloves:dict, selected:dict):
         csDicts.append(cosSim)
     return csDicts
 
-def scoresToArray(csDictList:list): #selected:dict, 
-    """     # for each text, add each cosine similarity value from csDicts to vecArray 
+def scoresToArray(selected:dict, csDictList:list, featureArray):
+    # for each text, add each cosine similarity value from csDicts to vecArray 
     allScores = []                  
-    for k in selected.keys(): # NEED TO REVERSE LOOPS so list has one tuple for each doc instead of a list for each key
+    for k in selected.keys():
         scores = []     
         for d in csDictList:
             scores.append(d[k]) # HERE TypeError: only integer scalar arrays can be converted to a scalar index when converting d[k] to list
         allScores.append(scores)
-    #newArray = [] """
-    allScores = []
-    for d in csDictList:
-        allScores.append(list(d.values()))
-    return allScores 
+    newArray = []
+    for i in range(len(allScores)):
+        allFeatures = list(featureArray[i]).append(list(allScores[i])) #IndexError: list index out of range
+        newArray.append(allFeatures)
+    return newArray 
 
 def getSentimentScores(csDict, keys):
     score = 0
@@ -187,62 +187,80 @@ def getSentimentScores(csDict, keys):
         score += csDict[k] # divide by number of keys?
     return score
 
+#def assignLabels():
+
 def main():
+
+    # read in train, validation or test set
+    #trainDf "data/train_instactivism_60.csv" X
+    #validateDf "data/validate_instactivism_20.csv"
+    #testDf "data/test_instactivism_20.csv"
+    dataSubset = "data/train_instactivism_60.csv" #choose train, validate or test
+    # get texts & labels
+    texts, trueLabs = getData(dataSubset)
+
     # get pre-trained GloVe embeddings
-    fname = "data/glove.twitter.27B.100d.txt" #"data/glove.twitter.27B.50d.txt" # #"data/glove.twitter.27B.25d.txt"
+    fname = "data/glove.twitter.27B.25d.txt"
     gloVecs = loadGloveVectors(fname) # takes a bit to load
 
     # select a few positive,  neutral and negative word embeddings to compare to centroids ?
     myGloVes = selectGloVecs(gloVecs)
-
-    # get raining texts & labels
-    trainTexts, trainLabs = getData("data/train_instactivism_60.csv")
+    posKeys = ["yes", "positive", "good", "agree", "like"]
+    neuKeys = ["maybe", "neutral", "okay", "alright", "middle"]
+    negKeys = ["no", "negative", "bad", "disagree", "dislike"]
 
     # get dictionary of centroid vectors of tokenized descriptions for each text
-    csDicts = getCSDicts(trainTexts, gloVecs, myGloVes) # list of dicts TRAINING
+    csDicts = getCSDicts(texts, gloVecs, myGloVes) # list of dicts
     print(len(csDicts))
     print(csDicts[0])
+
+    # get unigram feature matrix 
+    cv = CountVectorizer(ngram_range=(1,1)) # not much changes when bigrams are added, stop_words="english" improve pos, make neu/neg acuracy worse
+    cleanTexts = cleanAllTexts(texts)
+    cvFit = cv.fit(cleanTexts)
+    vecArray = cv.transform(cleanTexts).toarray()
+
     # for each text, add each cosine similarity value from csDicts to vecArray 
-    scoreArray = np.array(scoresToArray(csDicts)) # TRAINING
-    print(len(scoreArray)) 
-    print(len(scoreArray[1])) 
+    newArray = scoresToArray(myGloVes, csDicts, vecArray)
+    print(len(newArray))
+    print(len(newArray[1]))
 
-    # encode labels
-    le = preprocessing.LabelEncoder()
-    encodedLabs = le.fit_transform(trainLabs)
+    """     fancyArray = []
+    for i in vecArray:
+        allFeatures = np.append(vecArray[i], list(allScores[i]))
+        fancyArray.append(allFeatures) """
 
-    # train model
-    lrc = LogisticRegression(class_weight = "balanced") # make sure this is always training on train set
-    lrModel = lrc.fit(scoreArray, encodedLabs)
 
-    # read in validation or test set and get texts and labels for evaluation  
-    #validateDf "data/validate_instactivism_20.csv"
-    #testDf "data/test_instactivism_20.csv"
-    evalData = "data/validate_instactivism_20.csv" # change texts
-    evalTexts, evalLabs = getData(evalData) # EVAL
 
-    csDictsEval = getCSDicts(evalTexts, gloVecs, myGloVes) #EVAL
-    scoreArrayEval = np.array(scoresToArray(csDictsEval))
+"""         scoreDict = {}
+        scoreDict["positive"] = getSentimentScores(cosSim, posKeys)
+        scoreDict["neutral"] = getSentimentScores(cosSim, neuKeys)
+        scoreDict["negative"] = getSentimentScores(cosSim, negKeys)
+        predLabs.append(max(scoreDict, key = scoreDict.get)) # predict label with highest score """
+        
+"""     print(cosSim)
+    print(scoreDict)
+    print(len(predLabs))
+    #predLabs = predLabs
 
-    numLabs = lrModel.predict(scoreArrayEval) # TRAIN
-    predLabs = le.inverse_transform(numLabs)
-
-    cm = confusion_matrix(evalLabs, predLabs, labels=["negative", "neutral", "positive"]) #, normalize="true"
+    cm = confusion_matrix(trainLabs, predLabs, labels=["negative", "neutral", "positive"])
     cmd = ConfusionMatrixDisplay(cm, display_labels=["negative", "neutral", "positive"])
     cmd.plot()
-    plt.show()
+    plt.show() """
 
-    # get accuracy, f1, precision and recall
-    accuracy = accuracy_score(evalLabs, predLabs) # TRAIN
+"""     # get accuracy, f1, precision and recall
+    accuracy = accuracy_score(trainLabs, predLabs) 
     print("Accuracy: " + str(accuracy))
-    f1 = f1_score(evalLabs, predLabs, average = "macro") 
+    f1 = f1_score(trainLabs, predLabs, average = "macro") 
     print("F1: " + str(f1))
-    precision = precision_score(evalLabs, predLabs, average = "macro") 
+    precision = precision_score(trainLabs, predLabs, average = "macro") 
     print("Precision: " + str(precision))
-    recall = recall_score(evalLabs, predLabs, average = "macro")
+    recall = recall_score(trainLabs, predLabs, average = "macro")
     print("Recall: " + str(recall))
-    report = classification_report(evalLabs, predLabs)
-    print(report)
+    report = classification_report(trainLabs, predLabs)
+    print(report) """
 
+    #print(len(centroids))
+    #print(centroids[0])
 if __name__== "__main__" :
     main()
