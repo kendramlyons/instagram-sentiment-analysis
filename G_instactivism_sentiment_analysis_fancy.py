@@ -24,15 +24,19 @@ from sklearn import preprocessing
 
 # define functions
 def getData(fname):
+    '''Gets the texts and sentiment label from a .csv file.
+        Returns 1) texts as a pandas series, and 2) labels, also as a pandas series
+    '''
     df = pd.read_csv(fname)
     # get texts & labels
     texts = df["description"] 
-    print("Texts: "+str(type(texts[0])))
     trueLabs = df["sentiment"]
-    print("Labels: "+str(type(trueLabs)))
     return texts, trueLabs
 
 def cleanDoc(oneDoc: str): 
+    '''Removes punctuation (except for exclaimation points) and whitespace from a text string
+        Returns a clean text string
+    '''
     characters = "<>#_/-.,:;@"
     for c in characters:
         oneDoc = oneDoc.replace(c, " ")
@@ -40,13 +44,19 @@ def cleanDoc(oneDoc: str):
     return cleaned
 
 def cleanAllTexts(allDocs: list):
+    '''Removes punctuation (except !) and whitespace from a list of text strings
+        Returns a list of clean text strings
+    '''
     cleanTexts = []
     for i in range(len(allDocs)):
         clean = cleanDoc(allDocs[i])
         cleanTexts.append(clean) 
     return cleanTexts
 
-def tokenizeDoc(oneDoc: str): # cleans AND tokenizes
+def tokenizeDoc(oneDoc: str): 
+    '''Cleans and tokenizes a text string
+        Returns a list of tokens
+    '''
     tokens = cleanDoc(oneDoc).lower().split(" ")
     for t in tokens:
         if len(t)<2 and t!="!":
@@ -54,6 +64,9 @@ def tokenizeDoc(oneDoc: str): # cleans AND tokenizes
     return tokens
 
 def tokenizeAll(allDocs:list):
+    '''Cleans and tokenizes a list of text strings
+        Returns a list of lists of tokens
+    '''
     tokenized = []
     for i in range(len(allDocs)):
         tokens = tokenizeDoc(allDocs[i])
@@ -61,30 +74,30 @@ def tokenizeAll(allDocs:list):
     return tokenized
 
 def getVecLength(vecIn: list):
-    """This function computes the length of a vector.
+    """Computes the length of a vector.
         :param vecIn: a list representing a vector, one element per dimension.
         :return: the length of the vector.
     """
     total = 0
     for num in vecIn:
-        total += float(num)**2 # Here
+        total += float(num)**2 
     return total**(1/2)
 
 def normalizeVec(vecIn:list):
-    """This function normalizes a vector to unit length.
+    """Normalizes a vector to unit length.
         :param vecIn:  a list representing a vector, one element per dimension.
         :return: a list representing a vector, that has been normalized to unit length.
     """
     normVec = []
     for num in vecIn:
         if getVecLength(vecIn) > 0: # add if-else to deal with vectors of length 0
-            normVec.append(float(num)/getVecLength(vecIn)) #HERE ZeroDivisionError: float division by zero
+            normVec.append(float(num)/getVecLength(vecIn)) #HERE ZeroDivisionError: float division by zero (fixed)
         else:
             normVec.append(0)
     return normVec
 
 def dotProductVec(vecInA:list, vecInB:list):
-        """This method takes the dot product of two vectors.
+        """Takes the dot product of two vectors.
         :param vecInA, vecInB: two lists representing vectors,
             one element per dimension.
         :return: the dot product.
@@ -95,15 +108,17 @@ def dotProductVec(vecInA:list, vecInB:list):
         return dp
 
 def cosine(vecInA: list, vecInB: list):
-        """This method obtains the cosine between two vectors
-            (which is nominally the dot product of two vectors of unit length).
+        """Obtains the cosine between two vectors.
         :param vecInA, vecInB: two lists representing vectors, one element per dimension.
         :return: the cosine.
         """
-        cosAB = dotProductVec(normalizeVec(vecInA), normalizeVec(vecInB)) # here
+        cosAB = dotProductVec(normalizeVec(vecInA), normalizeVec(vecInB)) 
         return cosAB
 
 def loadGloveVectors(fname):
+    '''Loads vectors from a .txt file of pre-trained GloVe embeddings
+        Returns a dictionary 
+    '''
     gloVecs = {}
     with open(fname, 'r', encoding="utf-8") as glove:
         for line in glove:
@@ -116,13 +131,7 @@ def loadGloveVectors(fname):
     return gloVecs
 
 def computeCentroidVector(tokensIn:list, vecDict:dict):
-    """This method calculates the centroid vector from a list of
-        tokens. The centroid vector is the "average"
-        vector of a list of tokens.
-    #NOTE:  Special considerations:
-            - all tokens should be converted to lower case.
-            - if a vector isn't in the dictionary, it
-                shouldn't be a part of the average.
+    """Calculates the centroid vector from a list of tokens. 
         :param tokensIn: a list of tokens.
         :param vecDict: the vector library is a dictionary, 'vecDict',
             whose keys are tokens, and values are lists representing vectors.
@@ -145,6 +154,10 @@ def computeCentroidVector(tokensIn:list, vecDict:dict):
     return meanVec
 
 def selectGloVecs(gloveVectors: dict):
+    '''Selects positive, neutral and negative keys & values from a dictionary of 
+    pre-trained GloVe vectors to use for estimating sentiment of each word in a texts.
+        Returns a dictionary with a subset of positive, neutral, and negative word vectors. 
+    '''
     words = ["yes", "positive", "good", "agree", "like", 
             "maybe", "neutral", "okay", "alright", "middle",
             "no", "negative", "bad", "disagree", "dislike"]
@@ -155,6 +168,9 @@ def selectGloVecs(gloveVectors: dict):
     return myGloVes
 
 def getCSDicts(texts:list, gloves:dict, selected:dict):
+    '''Gets a list of one dictionary per text. Each dictionary contains the cosine similarity of 
+    the centroid vector of each text and a selected positive, neutral or negative GloVe vector.
+    '''
     csDicts = []
     for txt in texts:
         toks = tokenizeDoc(txt) 
@@ -168,63 +184,49 @@ def getCSDicts(texts:list, gloves:dict, selected:dict):
     return csDicts
 
 def scoresToArray(csDictList:list): #selected:dict, 
-    """     # for each text, add each cosine similarity value from csDicts to vecArray 
-    allScores = []                  
-    for k in selected.keys(): # NEED TO REVERSE LOOPS so list has one tuple for each doc instead of a list for each key
-        scores = []     
-        for d in csDictList:
-            scores.append(d[k]) # HERE TypeError: only integer scalar arrays can be converted to a scalar index when converting d[k] to list
-        allScores.append(scores)
-    #newArray = [] """
+    """ Takes a dictionary with positive neutral and negative cosine similarity scores 
+            Returns a list of lists with the scores, one for each text"""
     allScores = []
     for d in csDictList:
         allScores.append(list(d.values()))
     return allScores 
 
-def getSentimentScores(csDict, keys):
-    score = 0
-    for k in keys:
-        score += csDict[k] # divide by number of keys?
-    return score
 
 def main():
     # get pre-trained GloVe embeddings
-    fname = "data/glove.twitter.27B.100d.txt" #"data/glove.twitter.27B.50d.txt" # #"data/glove.twitter.27B.25d.txt"
+    fname = "data/glove.twitter.27B.50d.txt" #"data/glove.twitter.27B.50d.txt"
     gloVecs = loadGloveVectors(fname) # takes a bit to load
 
-    # select a few positive,  neutral and negative word embeddings to compare to centroids ?
+    # select a few positive, neutral and negative word embeddings to compare to centroids
     myGloVes = selectGloVecs(gloVecs)
 
-    # get raining texts & labels
+    # get training texts & labels
     trainTexts, trainLabs = getData("data/train_instactivism_60.csv")
 
     # get dictionary of centroid vectors of tokenized descriptions for each text
     csDicts = getCSDicts(trainTexts, gloVecs, myGloVes) # list of dicts TRAINING
-    print(len(csDicts))
-    print(csDicts[0])
+
     # for each text, add each cosine similarity value from csDicts to vecArray 
-    scoreArray = np.array(scoresToArray(csDicts)) # TRAINING
-    print(len(scoreArray)) 
-    print(len(scoreArray[1])) 
+    scoreArray = np.array(scoresToArray(csDicts)) # TRAIN
 
     # encode labels
     le = preprocessing.LabelEncoder()
     encodedLabs = le.fit_transform(trainLabs)
 
     # train model
-    lrc = LogisticRegression(class_weight = "balanced") # make sure this is always training on train set
-    lrModel = lrc.fit(scoreArray, encodedLabs)
+    lrc = LogisticRegression(class_weight = "balanced") 
+    lrModel = lrc.fit(scoreArray, encodedLabs) # TRAIN
 
     # read in validation or test set and get texts and labels for evaluation  
     #validateDf "data/validate_instactivism_20.csv"
     #testDf "data/test_instactivism_20.csv"
-    evalData = "data/validate_instactivism_20.csv" # change texts
+    evalData = "data/test_instactivism_20.csv" # change test texts
     evalTexts, evalLabs = getData(evalData) # EVAL
 
     csDictsEval = getCSDicts(evalTexts, gloVecs, myGloVes) #EVAL
     scoreArrayEval = np.array(scoresToArray(csDictsEval))
 
-    numLabs = lrModel.predict(scoreArrayEval) # TRAIN
+    numLabs = lrModel.predict(scoreArrayEval) # EVAL
     predLabs = le.inverse_transform(numLabs)
 
     cm = confusion_matrix(evalLabs, predLabs, labels=["negative", "neutral", "positive"]) #, normalize="true"
@@ -233,7 +235,7 @@ def main():
     plt.show()
 
     # get accuracy, f1, precision and recall
-    accuracy = accuracy_score(evalLabs, predLabs) # TRAIN
+    accuracy = accuracy_score(evalLabs, predLabs) # EVAL
     print("Accuracy: " + str(accuracy))
     f1 = f1_score(evalLabs, predLabs, average = "macro") 
     print("F1: " + str(f1))
