@@ -170,6 +170,7 @@ def selectGloVecs(gloveVectors: dict):
 def getCSDicts(texts:list, gloves:dict, selected:dict):
     '''Gets a list of one dictionary per text. Each dictionary contains the cosine similarity of 
     the centroid vector of each text and a selected positive, neutral or negative GloVe vector.
+    Returns a list of dictionaries with cosine similarity to selected GloVe vectors, one for each text
     '''
     csDicts = []
     for txt in texts:
