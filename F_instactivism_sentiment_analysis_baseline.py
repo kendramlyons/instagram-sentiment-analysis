@@ -21,7 +21,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 
-def cleanDoc(oneDoc: str): # JUST cleans
+def cleanDoc(oneDoc: str): 
     characters = "<>#_/-.,:;@"
     for c in characters:
         oneDoc = oneDoc.replace(c, " ")
@@ -71,7 +71,7 @@ def main():
     testPreds = lrModel.predict(testArray)
     testPreds = le.inverse_transform(testPreds)
 
-    # inspect validation set errors
+    # inspect errors
     cm = confusion_matrix(testLabels, testPreds, labels=["negative", "neutral", "positive"]) #, normalize = "true"
     cmd = ConfusionMatrixDisplay(cm, display_labels=["negative", "neutral", "positive"])
     cmd.plot()

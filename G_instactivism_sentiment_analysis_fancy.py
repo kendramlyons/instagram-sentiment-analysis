@@ -17,7 +17,7 @@ pre-trained GloVe embeddings from: https://nlp.stanford.edu/projects/glove/
 # load packages
 import matplotlib.pyplot as plt
 import pandas as pd, numpy as np
-#from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import ConfusionMatrixDisplay, confusion_matrix, accuracy_score, f1_score, precision_score, recall_score, classification_report
 from sklearn import preprocessing
@@ -27,7 +27,7 @@ def getData(fname):
     '''Gets the texts and sentiment label from a .csv file.
         Returns 1) texts as a pandas series, and 2) labels, also as a pandas series
     '''
-    df = pd.read_csv(fname)
+    df = pd.read_csv(fname, header=0)
     # get texts & labels
     texts = df["description"] 
     trueLabs = df["sentiment"]
@@ -158,9 +158,9 @@ def selectGloVecs(gloveVectors: dict):
     pre-trained GloVe vectors to use for estimating sentiment of each word in a texts.
         Returns a dictionary with a subset of positive, neutral, and negative word vectors. 
     '''
-    words = ["yes", "positive", "good", "agree", "like", 
-            "maybe", "neutral", "okay", "alright", "middle",
-            "no", "negative", "bad", "disagree", "dislike"]
+    words = ["yes", "positive", "good", "agree", "like", "happy", #"thank",
+            "maybe", "neutral", "okay", "alright", "middle", "might", "unsure", "moderate", "inform",
+            "no", "negative", "bad", "disagree", "dislike", "not", "hate", "despise", "angry", "mad", "pathetic", "ugh", "stupid"] # add "don't"
     myGloVes = {}
     for w in words:
         if w in gloveVectors.keys():
@@ -195,7 +195,7 @@ def scoresToArray(csDictList:list): #selected:dict,
 
 def main():
     # get pre-trained GloVe embeddings
-    fname = "data/glove.twitter.27B.50d.txt" #"data/glove.twitter.27B.50d.txt"
+    fname = "data/glove.twitter.27B.50d.txt" #"data/glove.twitter.27B.25d.txt"
     gloVecs = loadGloveVectors(fname) # takes a bit to load
 
     # select a few positive, neutral and negative word embeddings to compare to centroids
@@ -208,7 +208,17 @@ def main():
     csDicts = getCSDicts(trainTexts, gloVecs, myGloVes) # list of dicts TRAINING
 
     # for each text, add each cosine similarity value from csDicts to vecArray 
-    scoreArray = np.array(scoresToArray(csDicts)) # TRAIN
+    scoreArray = np.array(scoresToArray(csDicts)) # TRAIN 
+
+    # get unigrams and combine arrays
+    cv = CountVectorizer(ngram_range=(1,1)) # not much changes when bigrams are added, stop_words="english" improve pos, make neu/neg acuracy worse
+    cleanTexts = cleanAllTexts(trainTexts)
+    model = cv.fit(cleanTexts)
+    vecArrayTrain = cv.transform(cleanTexts).toarray()
+
+    trainArray = []
+    for i in range(len(vecArrayTrain)): 
+        trainArray.append(np.append(vecArrayTrain[i], scoreArray[i]))
 
     # encode labels
     le = preprocessing.LabelEncoder()
@@ -216,26 +226,40 @@ def main():
 
     # train model
     lrc = LogisticRegression(class_weight = "balanced") 
-    lrModel = lrc.fit(scoreArray, encodedLabs) # TRAIN
+    lrModel = lrc.fit(trainArray, encodedLabs) # TRAIN
 
     # read in validation or test set and get texts and labels for evaluation  
     #validateDf "data/validate_instactivism_20.csv"
     #testDf "data/test_instactivism_20.csv"
-    evalData = "data/test_instactivism_20.csv" # change test texts
+    evalData = "data/test_instactivism_20.csv" # change evaluation texts
     evalTexts, evalLabs = getData(evalData) # EVAL
 
     csDictsEval = getCSDicts(evalTexts, gloVecs, myGloVes) #EVAL
-    scoreArrayEval = np.array(scoresToArray(csDictsEval))
+    scoreArrayEval = scoresToArray(csDictsEval) 
 
-    numLabs = lrModel.predict(scoreArrayEval) # EVAL
+    cleanEvalTexts = cleanAllTexts(evalTexts)
+    vecArrayEval = cv.transform(cleanEvalTexts).toarray() 
+    print("Vector array length: "+str(len(vecArrayEval)))
+    print("Single vector length: "+str(len(vecArrayEval[0])))
+
+    fancyArray = []
+    for i in range(len(vecArrayEval)): 
+        fancyArray.append(np.append(vecArrayEval[i], scoreArrayEval[i])) 
+    print("Fancy array length: "+str(len(fancyArray)))
+    print("Single vector length: "+str(len(fancyArray[0])))
+
+    # use model to predict on validate/test texts
+    numLabs = lrModel.predict(fancyArray) # EVAL 
     predLabs = le.inverse_transform(numLabs)
 
+    # show confusion matrix
     cm = confusion_matrix(evalLabs, predLabs, labels=["negative", "neutral", "positive"]) #, normalize="true"
     cmd = ConfusionMatrixDisplay(cm, display_labels=["negative", "neutral", "positive"])
     cmd.plot()
+    plt.savefig("figures/confusion_num_"+evalData[5:-4]+".png")
     plt.show()
 
-    # get accuracy, f1, precision and recall
+    # print accuracy, f1, precision and recall
     accuracy = accuracy_score(evalLabs, predLabs) # EVAL
     print("Accuracy: " + str(accuracy))
     f1 = f1_score(evalLabs, predLabs, average = "macro") 
@@ -246,6 +270,9 @@ def main():
     print("Recall: " + str(recall))
     report = classification_report(evalLabs, predLabs)
     print(report)
+
+    results = pd.DataFrame({"texts": evalTexts.values, "my_labels":evalLabs.values, "predicted": predLabs, "prediction_class": evalLabs+"-"+predLabs, "clean_texts": cleanEvalTexts})
+    results.to_csv("data/results_"+evalData[5:])
 
 if __name__== "__main__" :
     main()

@@ -14,7 +14,6 @@ def main():
     allErrors["error type"] = allErrors["sentiment"] +"-"+ allErrors["predicted"]
     
     # get error-types and counts
-    errorTypes = allErrors["error type"].unique() # all possible error types
     errorCounts = allErrors["error type"].value_counts() # pandas series
     # make dataframe 
     errorDf = pd.DataFrame(errorCounts)
@@ -29,10 +28,14 @@ def main():
     print("Negative misclassifications: " + str(round((errorDf.percent[5]+errorDf.percent[6])*100, 1))+"%")
 
     # plot error counts by type
+    
     plt.figure()
     plt.bar(errorDf.error_type, errorDf.percent, color = "darkgreen")
-    plt.xlabel("Error Types (true-predicted)")
-    plt.title("Error Type Proportions")
+    #plt.rcparams
+    plt.xlabel("Error Types (true-predicted)", fontsize=18)
+    plt.xticks(fontsize=16)
+    plt.yticks(fontsize=16)
+    plt.title("Error Types", fontsize=20)
     plt.show()
 
 

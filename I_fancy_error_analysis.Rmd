@@ -1,0 +1,47 @@
+---
+title: "Sentiment Classification Error Analysis"
+author: "Kendra Lyons"
+date: '2022-05-02'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(ggthemes)
+library(knitr)
+library(tidyverse)
+
+opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+```
+
+## Get Error Data
+
+```{r}
+fancyErrors <- read_csv("data/all6_error_types_instactivism_fancy.csv") %>%
+  mutate(evaluation = factor(evaluation, levels = c("validate", "test")),
+         error_type = factor(error_type),
+         prediction_class = factor(prediction_class),
+         predicted = factor(predicted),
+         my_labels = factor(my_labels))
+```
+
+```{r}
+
+fancyErrors %>%
+  count(error_type, evaluation) %>%
+  mutate(percent = (n/sum(n))*100) %>%
+  ggplot(aes(x = reorder(error_type, -percent), 
+             y = percent,
+             fill = evaluation)) +
+  geom_col() +
+  theme_linedraw(18) +
+  theme(legend.position = "top", 
+        panel.grid.minor.y = element_blank(),
+        axis.text.x = element_text(angle = 15, vjust = .7)) +
+  scale_y_continuous(limits = c(0, 25)) +
+  scale_fill_colorblind() +
+  labs(x = element_blank(),
+       y = "percentage of errors",
+       fill = "Fancy model errors by evaluation set:")
+
+```
+
