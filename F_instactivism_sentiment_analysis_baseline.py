@@ -49,7 +49,7 @@ def main():
     cv = CountVectorizer(ngram_range=(1,1)) # not much changes when bigrams are added, stop_words="english" improve pos, make neu/neg acuracy worse
     cleanTexts = cleanAllTexts(trainTexts)
     model = cv.fit(cleanTexts)
-    vecArray = cv.transform(cleanTexts).toarray()
+    vecArray = cv.transform(cleanTexts).toarray() # keep toarray (fancy)
     #features = cv.vocabulary_
 
     # get labels
@@ -62,14 +62,14 @@ def main():
     lrModel = lrc.fit(vecArray, encodedLabs)
 
     # set validation or test 
-    test_df = validateDf
+    test_df = validateDf #testDf
     # test set data
     testText = cleanAllTexts(test_df["description"])
     testLabels = test_df["sentiment"]
     testArray = cv.transform(testText).toarray()
     # predict 
-    testPreds = lrModel.predict(testArray)
-    testPreds = le.inverse_transform(testPreds)
+    numPreds = lrModel.predict(testArray)
+    testPreds = le.inverse_transform(numPreds)
 
     # inspect errors
     cm = confusion_matrix(testLabels, testPreds, labels=["negative", "neutral", "positive"]) #, normalize = "true"
@@ -88,6 +88,9 @@ def main():
     print("Recall: " + str(recall))
     report = classification_report(testLabels, testPreds)
     print(report)
+
+    results = pd.DataFrame({"texts": testText, "my_labels":testLabels.values, "predicted": testPreds})
+    results.to_csv("data/baseline_test_results_instactivism.csv")
 
 if __name__== "__main__" :
     main()

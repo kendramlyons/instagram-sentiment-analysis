@@ -18,10 +18,14 @@ opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
 ```{r}
 fancyErrors <- read_csv("data/all6_error_types_instactivism_fancy.csv") %>%
   mutate(evaluation = factor(evaluation, levels = c("validate", "test")),
-         error_type = factor(error_type),
+         error_type = factor(error_type, levels = c("short or rare", "gold uncertainty", "advertising", "advocacy", "suggestion", "urgency")),
          prediction_class = factor(prediction_class),
          predicted = factor(predicted),
          my_labels = factor(my_labels))
+
+errorPcts <- fancyErrors %>%
+  count(error_type) %>%
+  mutate(percent = (n/sum(n))*100)
 ```
 
 ```{r}
@@ -29,7 +33,7 @@ fancyErrors <- read_csv("data/all6_error_types_instactivism_fancy.csv") %>%
 fancyErrors %>%
   count(error_type, evaluation) %>%
   mutate(percent = (n/sum(n))*100) %>%
-  ggplot(aes(x = reorder(error_type, -percent), 
+  ggplot(aes(x = error_type, 
              y = percent,
              fill = evaluation)) +
   geom_col() +
@@ -43,5 +47,24 @@ fancyErrors %>%
        y = "percentage of errors",
        fill = "Fancy model errors by evaluation set:")
 
+```
+
+
+```{r}
+fancyErrors %>%
+  count(error_type, prediction_class) %>%
+  mutate(percent = (n/sum(n))*100) %>%
+  ggplot(aes(y = factor(error_type, rev(errorPcts$error_type)), 
+             x = percent)) +
+  geom_col(aes(fill = prediction_class),
+           position = position_fill(reverse = TRUE)) +
+  theme_linedraw(14) +
+  theme(legend.justification = -.4, 
+        legend.position = "top", 
+        panel.grid.minor.y = element_blank()) +
+  labs(fill = element_blank(), 
+       y = element_blank(),
+       x = "proportion") +
+  scale_fill_viridis_d()
 ```
 
