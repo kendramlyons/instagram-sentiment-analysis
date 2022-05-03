@@ -26,7 +26,8 @@ def calculatePValue(differenceScores: list, numResamples = 10000):
     return p_value
 
 def main():
-    allResults = pd.read_csv("data/test_predictions_instactivism.csv") #"data/test_predictions_instactivism.csv"
+    random.seed(13)
+    allResults = pd.read_csv("data/validate_predictions_instactivism.csv") #"data/test_predictions_instactivism.csv"
 
     # encode scores and add to dataframe    
     le = preprocessing.LabelEncoder()
@@ -43,7 +44,7 @@ def main():
     pValue = calculatePValue(differenceScores)
     print("P-value: "+str(pValue))
 
-    allResults.to_csv("data/test_differences_instactivism.csv")
+    allResults.to_csv("data/validate_differences_instactivism.csv")
 
 if __name__== "__main__" :
     main()
