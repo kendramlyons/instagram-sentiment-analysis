@@ -1,0 +1,47 @@
+Baseline-Unigram Logistic Regression,d0,d1,d2,num_correct,total,num_incorrect,top-right-3,bottom-left-3,accuracy-percent,f1,precision,recall
+train,56,67,175,298,298,0,0,0,100,,,
+"validate, unigram + balanced",8,15,45,68,100,32,18,14,68,0.6101753704,0.6118077325,0.6163628712
+"validate, uni + bigram + bal",6,16,46,68,100,32,19,13,68,,,
+"validate, uni + stopwords + bal",6,11,47,64,100,36,23,13,64,,,
+"validate, unigram (not balanced)",7,10,48,65,100,35,24,11,65,,,
+"validate, uni + bi + sws + balanced",5,10,50,65,100,35,25,10,65,,,
+"validate, decision tree (kitchen sink)",5,8,42,55,100,45,28,17,55,,,
+"uni + max_df = .7, (.8 same)",8,15,45,68,100,32,18,14,68,0.6101753704,0.6118077325,0.6163628712
+"validate, uni + max_df = .6",6,14,46,66,100,34,21,13,66,,,
+"validate, uni + max_df = .5",6,13,45,64,100,36,22,14,64,,,
+"validate, uni + max_df = .4",6,9,48,63,100,37,26,11,63,,,
+"validate, uni + max_df = .3",6,10,47,63,100,37,24,13,63,,,
+"validate, uni + min_df = .1 ",8,15,28,51,100,49,15,34,51,0.4807757123,0.5046685341,0.5186617218
+"validate, uni + min_df = .05",8,10,29,47,100,53,18,35,47,0.4335191863,0.4471225071,0.4519450801
+"validate, uni + min_df = .2",8,16,29,53,100,47,15,32,53,0.4993245525,0.5145418483,0.5389016018
+"validate, uni + min_df = .3",6,18,25,49,100,51,16,35,49,0.4562800021,0.4890552995,0.509810884
+"validate, uni + min_df = .4",1,20,26,47,100,53,19,34,47,0.3858987454,0.4245915375,0.4568242195
+"test, unigram + balanced",7,8,47,62,99,37,23,14,62.62626263,0.5238760556,0.5454909674,0.5141340813
+"GloVe Embedding Cosine Similarity, max score",d0,d1,d2,num_correct,total,num_incorrect,top-right-3,bottom-left-3,accuracy-percent,f1,precision,recall
+"train, gloVe (25) cos similarity max score",19,13,115,147,298,151,76,75,49.32885906,0.3929143773,0.4079019496,0.3968194741
+"validate, gloVe (25) cos similarity max score",8,5,30,43,100,57,25,32,43,0.3732366821,0.3875661376,0.3852284384
+"test, gloVe (25) cos similarity max score",8,2,35,45,99,54,24,30,45.45454545,0.3534107651,0.3475355054,0.3718033328
+"train, gloVe (50) cos similarity max score",19,6,130,155,298,143,86,57,52.01342282,0.375862069,0.3940624649,0.390565032
+"validate, gloVe (50) cos similarity max score",6,3,43,52,100,48,31,17,52,0.3894376246,0.4185692542,0.3958678555
+"test, gloVe (50) cos similarity max score",5,3,40,48,99,51,27,24,48.48484848,0.3567678437,0.3641304348,0.3630589012
+"Fancy-GloVe Embedding Cosine Similarity, log reg",d0,d1,d2,num_correct,total,num_incorrect,top-right-3,bottom-left-3,accuracy-percent,f1,precision,recall
+"train, gloVe (25), cosine similariry  log reg",31,29,77,137,298,161,44,117,45.97315436,0.437507846,0.4493417637,0.4754690832
+"validate, gloVe (25), cosine similariry  log reg",10,13,28,51,100,49,15,34,51,0.4964912281,0.5141570142,0.5247639338
+"train, gloVe (50), cosine similariry  log reg",32,25,79,136,298,162,42,120,45.63758389,0.4284072146,0.4410923774,0.4653304904
+"validate, gloVe (50), cosine similariry  log reg",12,13,30,55,100,45,13,32,55,0.5348964042,0.5367806268,0.571345906
+"train, gloVe (100), cosine similariry  log reg (canceled, took too long)",,,,,,,,,,,,
+"Fancy-GloVe Embedding Cosine Similarity, log reg (train on train)",d0,d1,d2,num_correct,total,num_incorrect,top-right-3,bottom-left-3,accuracy-percent,f1,precision,recall
+"train, gloVe (25), cosine similariry log reg",32,28,65,125,298,173,40,133,41.94630872,0.4091571259,0.4244827912,0.4535891969
+"validate, gloVe (25), cosine similariry  log reg",5,9,29,43,100,57,23,34,43,0.3784900285,0.3892652243,0.3848207475
+"validate, gloVe (25), cosine similariry  log reg (not balanced)",0,0,58,58,100,42,42,0,58,0.2447257384,0.1933333333,0.3333333333
+"test, gloVe (25), cosine similariry log reg",6,9,20,35,99,64,21,43,35.35353535,0.3319656669,0.3451559934,0.356569323
+"train, gloVe (50), cosine similariry log reg",32,25,79,136,298,162,42,120,45.63758389,0.4284072146,0.4410923774,0.4653304904
+"validate, gloVe (50), cosine similariry log reg",9,7,33,49,100,51,20,31,49,0.442285026,0.4456750068,0.4489991846
+"test, gloVe (50), cosine similariry log reg",6,7,21,34,99,65,22,43,34.34343434,0.3153559233,0.3318772401,0.3320134191
+"Fancy-GloVe Embedding Cosine Similarity, Unigram log reg",d0,d1,d2,num_correct,total,num_incorrect,top-right-3,bottom-left-3,accuracy-percent,f1,precision,recall
+train,56,67,175,298,298,0,0,0,100,,,
+validate1,8,15,46,69,100,31,18,13,69,0.6196078431,0.6253550543,0.6221099976
+"validate2 w/ stop_words = ""english"" (count vectorizer)",7,11,50,68,100,32,22,10,68,0.5776011481,0.59375,0.5695836292
+validate3 w/ bigrams,4,15,45,64,100,36,22,14,64,0.5313950168,0.5480063796,0.5461874326
+validate4 add pos/neu/neg words,8,15,47,70,100,30,18,12,70,0.6278095355,0.6391625616,0.6278571241
+"test, fancy (complete)",7,9,47,63,99,36,23,13,63.63636364,0.5401107645,0.5633699634,0.5292855964
